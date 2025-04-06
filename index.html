@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1日の風景</title>
+    <style>
+      body {
+        /* margin: 0; */
+        background-image: url("day.jpg");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        /* transition: background-image 1s ease-in-out; */
+      }
+      body.night {
+        background-image: url("night.jpg");
+      }
+      #sun,
+      #moon {
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        transform: translate(-50%, -50%);
+        display: none;
+      }
+      #sun {
+        /* background: yellow; */
+      }
+      #moon {
+        /* background: #f5f3ce; */
+        display: none;
+      }
+      #mountain {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 400px;
+        background: url("mountain.png") no-repeat center bottom;
+        background-size: 100% 100%;
+        z-index: 1;
+      }
+      #bird,
+      #shootingStar {
+        position: absolute;
+        width: 50px;
+        height: auto;
+        top: 100px; /* 高度は好みで調整してね！ */
+        display: none;
+        z-index: 5;
+      }
+      .controlButton {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        padding: 15px 30px;
+        font-size: 22px;
+        z-index: 10;
+        background-color: white;
+        border: 2px solid #333;
+        border-radius: 10px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+
+      #stopButton {
+        left: 160px;
+      }
+      #rabbit {
+        position: fixed;
+        bottom: 135px;
+        transform: translate(-50%, 100%);
+        width: 80px;
+        height: auto;
+        z-index: 0; /* ←ここを1から2にUP！ */
+        transition: transform 0.5s;
+      }
+      #speechBubble {
+        position: fixed;
+        bottom: 280px; /* ウサギの上 */
+        left: 60%;
+        transform: translate(-10%, 0); /* ← -50% → -30% にするとちょい右寄り♪ */
+        background: white;
+        border: 2px solid #333;
+        border-radius: 10px;
+        padding: 10px 15px;
+        font-size: 16px;
+        z-index: 2;
+        display: none;
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
+        max-width: 200px;
+        text-align: center;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+  </head>
+  <body>
+    <button id="startButton" class="controlButton">▶ スタート</button>
+    <button id="stopButton" class="controlButton" style="display: none">
+      ⏹ ストップ
+    </button>
+    <img id="sun" src="sun.svg" alt="太陽" />
+    <img id="moon" src="moon.svg" alt="月" />
+    <div id="mountain"></div>
+    <img id="bird" src="bird.png" alt="鳥" />
+    <img id="shootingStar" src="star.png" alt="流れ星" />
+    <img id="rabbit" src="rabbit.png" alt="マリーちゃん" />
+    <div id="speechBubble">やっほー！</div>
+
+    <script>
+      const sun = document.getElementById("sun");
+      const moon = document.getElementById("moon");
+      const bird = document.getElementById("bird");
+      const shootingStar = document.getElementById("shootingStar");
+      const rabbit = document.getElementById("rabbit");
+
+      // 半径と中心を画面サイズに応じて調整する関数
+      function updateDimensions() {
+        centerX = window.innerWidth / 2;
+        radius = Math.min(window.innerWidth, window.innerHeight) * 0.3;
+        centerY = window.innerHeight * 0.5 + radius * 0.5;
+      }
+
+      let centerX, centerY, radius;
+      updateDimensions();
+
+      window.addEventListener("resize", updateDimensions);
+
+      let angle = Math.PI;
+      let isDay = true;
+      let animationId;
+      let birdId = null;
+      let starId = null;
+
+      const daySound = new Howl({
+        src: ["daySound.mp3"],
+        loop: true,
+        volume: 0.4,
+      });
+      const nightSound = new Howl({
+        src: ["nightSound.mp3"],
+        loop: true,
+        volume: 0.4,
+      });
+
+      // 鳥の動き（右→左）
+      let birdX = window.innerWidth;
+      function moveBird() {
+        if (!isDay) return;
+        birdX -= 2;
+        if (birdX < -50) birdX = window.innerWidth;
+        bird.style.left = `${birdX}px`;
+        birdId = requestAnimationFrame(moveBird);
+      }
+
+      // 流れ星の動き（右→左）
+      let starX = window.innerWidth;
+      function moveStar() {
+        if (isDay) return;
+        starX -= 4;
+        if (starX < -50) starX = window.innerWidth;
+        shootingStar.style.left = `${starX}px`;
+        starId = requestAnimationFrame(moveStar);
+      }
+      function popRabbit() {
+        const messages = [
+          "やっほー！",
+          "ピョン！",
+          "がんばってる？",
+          "いい天気！",
+          "元気？",
+          "お名前は？",
+          "楽しいね♪",
+          "にんじん大好き🥕",
+          "明日も晴れるかな？",
+        ];
+        const message = messages[Math.floor(Math.random() * messages.length)];
+
+        // ランダムな位置にウサギを移動
+        const randomLeft = 10 + Math.random() * 80;
+        rabbit.style.left = `${randomLeft}%`;
+
+        // 吹き出しの位置も連動
+        const speechBubble = document.getElementById("speechBubble");
+        speechBubble.style.left = `${randomLeft}%`;
+        speechBubble.textContent = message;
+        speechBubble.style.display = "block";
+
+        // ウサギをぴょこん（z-index を一時的に上げる）
+        rabbit.style.zIndex = 2;
+        rabbit.style.transform = "translate(-50%, -20%)";
+
+        // 戻る処理（1〜2秒後）
+        setTimeout(() => {
+          rabbit.style.transform = "translate(-50%, 100%)";
+          rabbit.style.zIndex = 0; // 元に戻して再び山の後ろに
+          speechBubble.style.display = "none";
+        }, 1000 + Math.random() * 1000);
+
+        // 次回のピョコン予約（3〜8秒後）
+        setTimeout(popRabbit, 3000 + Math.random() * 5000);
+      }
+
+      // アニメーション全体
+      function animate() {
+        if (isDay) {
+          const X = centerX + radius * Math.cos(angle);
+          const Y = centerY + radius * Math.sin(angle);
+
+          sun.style.left = `${X}px`;
+          sun.style.top = `${Y}px`;
+          sun.style.display = "block";
+
+          angle += 0.01;
+
+          if (angle >= 2 * Math.PI) {
+            isDay = false;
+            document.body.classList.add("night");
+            sun.style.display = "none";
+            moon.style.display = "block";
+            bird.style.display = "none";
+            shootingStar.style.display = "block";
+            angle = Math.PI;
+            cancelAnimationFrame(birdId);
+            moveStar(); // ⭐️ ←流れ星の動きスタート
+            nightSound.play();
+            daySound.stop();
+          }
+        } else {
+          const moonX = centerX + radius * Math.cos(angle);
+          const moonY = centerY + radius * Math.sin(angle);
+
+          moon.style.left = `${moonX}px`;
+          moon.style.top = `${moonY}px`;
+
+          angle += 0.01;
+
+          if (angle >= 2 * Math.PI) {
+            isDay = true;
+            document.body.classList.remove("night");
+            moon.style.display = "none";
+            sun.style.display = "block";
+            shootingStar.style.display = "none";
+            bird.style.display = "block";
+            angle = Math.PI;
+            cancelAnimationFrame(starId);
+            moveBird(); // 🐦 ←鳥の動き再スタート
+            daySound.play();
+            nightSound.stop();
+          }
+        }
+
+        animationId = requestAnimationFrame(animate);
+      }
+
+      document.getElementById("startButton").addEventListener("click", () => {
+        document.getElementById("startButton").style.display = "none";
+        document.getElementById("stopButton").style.display = "inline-block";
+        sun.style.display = "block";
+        bird.style.display = "block";
+        birdX = window.innerWidth;
+        starX = window.innerWidth;
+        daySound.play();
+        moveBird();
+        animate();
+        popRabbit();
+      });
+      document.getElementById("stopButton").addEventListener("click", () => {
+        cancelAnimationFrame(animationId);
+        cancelAnimationFrame(birdId);
+        cancelAnimationFrame(starId);
+        daySound.stop();
+        nightSound.stop();
+        document.getElementById("stopButton").style.display = "none";
+        document.getElementById("startButton").style.display = "inline-block";
+      });
+    </script>
+  </body>
+</html>
